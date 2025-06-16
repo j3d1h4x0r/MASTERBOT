@@ -77,26 +77,26 @@ MASTERBOT is a comprehensive Raspberry Pi controller designed specifically for t
 
 ```bash
 # Get system information
-node index.js info
+node cli.js info
 
 # Check CPU temperature
-node index.js temp
+node cli.js temp
 
 # Control GPIO pin 18
-node index.js gpio-set 18 dh
-node index.js gpio-get 18
+node cli.js gpio-set 18 dh
+node cli.js gpio-get 18
 
 # Manage services
-node index.js service-status ssh
-node index.js service-control nginx restart
+node cli.js service-status ssh
+node cli.js service-control nginx restart
 
 # WiFi operations
-node index.js wifi-status
-node index.js wifi-scan
+node cli.js wifi-status
+node cli.js wifi-scan
 
 # System control (use with caution!)
-node index.js reboot
-node index.js shutdown
+node cli.js reboot
+node cli.js shutdown
 ```
 
 ### Configuration
@@ -173,7 +173,7 @@ Test the application:
 
 ```bash
 # Test CLI commands
-node index.js info
+node cli.js info
 
 # Test web server
 npm start
