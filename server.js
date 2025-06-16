@@ -4,6 +4,10 @@ const rateLimit = require('express-rate-limit');
 const RaspberryPiController = require('./index');
 const config = require('./config.json');
 
+// Allow environment variables to override configured credentials
+const AUTH_USER = process.env.WEB_USER || config.web_interface.auth.username;
+const AUTH_PASS = process.env.WEB_PASS || config.web_interface.auth.password;
+
 const app = express();
 const controller = new RaspberryPiController();
 
@@ -44,7 +48,10 @@ function basicAuth(req, res, next) {
     const username = credentials[0];
     const password = credentials[1];
 
-    if (username === config.web_interface.auth.username && password === config.web_interface.auth.password) {
+    const expectedUser = process.env.WEB_USER || config.web_interface.auth.username;
+    const expectedPass = process.env.WEB_PASS || config.web_interface.auth.password;
+
+    if (username === expectedUser && password === expectedPass) {
         next();
     } else {
         res.status(401).json({ error: 'Invalid credentials' });
@@ -189,7 +196,7 @@ app.listen(PORT, HOST, () => {
     console.log(`🔧 API available on http://${HOST}:${PORT}/api`);
     console.log(`💡 Access the dashboard at http://${HOST}:${PORT}`);
     if (config.web_interface.auth.enabled) {
-        console.log(`🔐 Authentication enabled - Username: ${config.web_interface.auth.username}`);
+        console.log(`🔐 Authentication enabled - Username: ${AUTH_USER}`);
     }
 });
 
