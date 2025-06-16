@@ -188,7 +188,7 @@ npm start
 # Visit http://localhost:3000
 
 # Test API endpoints
-curl -u admin:changeMe123! http://localhost:3000/api/system/info
+curl -u admin:changeMe123! http://localhost:3001/api/system/info
 ```
 
 ## 🤝 Contributing

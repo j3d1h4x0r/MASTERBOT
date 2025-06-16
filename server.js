@@ -4,13 +4,15 @@ const rateLimit = require('express-rate-limit');
 const RaspberryPiController = require('./index');
 const config = require('./config.json');
 
-const app = express();
 const controller = new RaspberryPiController();
 
-// Middleware
-app.use(express.json());
-app.use(express.static('public'));
-app.use((req, res, next) => {
+// Express instances
+const dashboardApp = express();
+const apiRouter = express.Router();
+
+// API Middleware
+apiRouter.use(express.json());
+apiRouter.use((req, res, next) => {
     if (config.api.cors) {
         res.header('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
@@ -52,7 +54,7 @@ function basicAuth(req, res, next) {
 }
 
 // API Routes
-app.get('/api/system/info', basicAuth, async (req, res) => {
+apiRouter.get('/system/info', basicAuth, async (req, res) => {
     try {
         const info = await controller.getSystemInfo();
         res.json({ success: true, data: info });
@@ -61,7 +63,7 @@ app.get('/api/system/info', basicAuth, async (req, res) => {
     }
 });
 
-app.get('/api/system/temperature', basicAuth, async (req, res) => {
+apiRouter.get('/system/temperature', basicAuth, async (req, res) => {
     try {
         const temp = await controller.getCPUTemperature();
         res.json({ success: true, data: { temperature: temp } });
@@ -70,7 +72,7 @@ app.get('/api/system/temperature', basicAuth, async (req, res) => {
     }
 });
 
-app.get('/api/system/memory', basicAuth, async (req, res) => {
+apiRouter.get('/system/memory', basicAuth, async (req, res) => {
     try {
         const memory = await controller.getMemoryInfo();
         res.json({ success: true, data: { memory } });
@@ -79,7 +81,7 @@ app.get('/api/system/memory', basicAuth, async (req, res) => {
     }
 });
 
-app.get('/api/system/disk', basicAuth, async (req, res) => {
+apiRouter.get('/system/disk', basicAuth, async (req, res) => {
     try {
         const disk = await controller.getDiskUsage();
         res.json({ success: true, data: { disk } });
@@ -88,7 +90,7 @@ app.get('/api/system/disk', basicAuth, async (req, res) => {
     }
 });
 
-app.get('/api/wifi/status', basicAuth, async (req, res) => {
+apiRouter.get('/wifi/status', basicAuth, async (req, res) => {
     try {
         const status = await controller.getWiFiStatus();
         res.json({ success: true, data: { status } });
@@ -97,7 +99,7 @@ app.get('/api/wifi/status', basicAuth, async (req, res) => {
     }
 });
 
-app.get('/api/wifi/scan', basicAuth, async (req, res) => {
+apiRouter.get('/wifi/scan', basicAuth, async (req, res) => {
     try {
         const networks = await controller.scanWiFi();
         res.json({ success: true, data: { networks } });
@@ -106,7 +108,7 @@ app.get('/api/wifi/scan', basicAuth, async (req, res) => {
     }
 });
 
-app.get('/api/gpio/:pin', basicAuth, async (req, res) => {
+apiRouter.get('/gpio/:pin', basicAuth, async (req, res) => {
     try {
         const pin = req.params.pin;
         const state = await controller.getGPIO(pin);
@@ -116,7 +118,7 @@ app.get('/api/gpio/:pin', basicAuth, async (req, res) => {
     }
 });
 
-app.post('/api/gpio/:pin', basicAuth, async (req, res) => {
+apiRouter.post('/gpio/:pin', basicAuth, async (req, res) => {
     try {
         const pin = req.params.pin;
         const { state } = req.body;
@@ -127,7 +129,7 @@ app.post('/api/gpio/:pin', basicAuth, async (req, res) => {
     }
 });
 
-app.get('/api/service/:name/status', basicAuth, async (req, res) => {
+apiRouter.get('/service/:name/status', basicAuth, async (req, res) => {
     try {
         const serviceName = req.params.name;
         const status = await controller.getServiceStatus(serviceName);
@@ -137,7 +139,7 @@ app.get('/api/service/:name/status', basicAuth, async (req, res) => {
     }
 });
 
-app.post('/api/service/:name/:action', basicAuth, async (req, res) => {
+apiRouter.post('/service/:name/:action', basicAuth, async (req, res) => {
     try {
         const serviceName = req.params.name;
         const action = req.params.action;
@@ -148,7 +150,7 @@ app.post('/api/service/:name/:action', basicAuth, async (req, res) => {
     }
 });
 
-app.post('/api/system/reboot', basicAuth, async (req, res) => {
+apiRouter.post('/system/reboot', basicAuth, async (req, res) => {
     try {
         const result = await controller.reboot();
         res.json({ success: true, data: { message: result } });
@@ -157,7 +159,7 @@ app.post('/api/system/reboot', basicAuth, async (req, res) => {
     }
 });
 
-app.post('/api/system/shutdown', basicAuth, async (req, res) => {
+apiRouter.post('/system/shutdown', basicAuth, async (req, res) => {
     try {
         const result = await controller.shutdown();
         res.json({ success: true, data: { message: result } });
@@ -166,13 +168,17 @@ app.post('/api/system/shutdown', basicAuth, async (req, res) => {
     }
 });
 
+// Mount API router on dashboard
+dashboardApp.use('/api', apiRouter);
+
 // Serve the main HTML page
-app.get('/', (req, res) => {
+dashboardApp.use(express.static('public'));
+dashboardApp.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+dashboardApp.get('/health', (req, res) => {
     res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
@@ -180,16 +186,27 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Start the server
-const PORT = config.web_interface.port || 3000;
+// Start servers
+const WEB_PORT = config.web_interface.port || 3000;
 const HOST = config.web_interface.host || '0.0.0.0';
 
-app.listen(PORT, HOST, () => {
-    console.log(`🌐 MASTERBOT Web Interface running on http://${HOST}:${PORT}`);
-    console.log(`🔧 API available on http://${HOST}:${PORT}/api`);
-    console.log(`💡 Access the dashboard at http://${HOST}:${PORT}`);
-    if (config.web_interface.auth.enabled) {
-        console.log(`🔐 Authentication enabled - Username: ${config.web_interface.auth.username}`);
-    }
-});
+if (config.web_interface.enabled) {
+    dashboardApp.listen(WEB_PORT, HOST, () => {
+        console.log(`🌐 MASTERBOT Web Interface running on http://${HOST}:${WEB_PORT}`);
+        console.log(`💡 Access the dashboard at http://${HOST}:${WEB_PORT}`);
+        console.log(`🔧 API available on http://${HOST}:${WEB_PORT}/api`);
+        if (config.web_interface.auth.enabled) {
+            console.log(`🔐 Authentication enabled - Username: ${config.web_interface.auth.username}`);
+        }
+    });
+}
+
+if (config.api.enabled) {
+    const API_PORT = config.api.port || 3001;
+    const apiApp = express();
+    apiApp.use('/api', apiRouter);
+    apiApp.listen(API_PORT, HOST, () => {
+        console.log(`🚀 MASTERBOT API running on http://${HOST}:${API_PORT}/api`);
+    });
+}
 
