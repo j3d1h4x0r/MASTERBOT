@@ -30,7 +30,8 @@
   },
   "homepage": "https://github.com/j3d1h4x0r/MASTERBOT#readme",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.7.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1",
