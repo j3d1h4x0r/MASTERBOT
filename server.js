@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const RaspberryPiController = require('./index');
 const config = require('./config.json');
 
@@ -17,6 +18,15 @@ app.use((req, res, next) => {
     }
     next();
 });
+
+// Rate limiting for API routes
+if (config.api.rate_limit && config.api.rate_limit.enabled) {
+    const limiter = rateLimit({
+        windowMs: 60 * 1000, // 1 minute
+        max: config.api.rate_limit.requests_per_minute
+    });
+    app.use('/api', limiter);
+}
 
 // Basic authentication middleware
 function basicAuth(req, res, next) {
