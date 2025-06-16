@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -35,7 +35,7 @@ class RaspberryPiController {
             };
 
             if (this.isRaspberryPi) {
-                exec('vcgencmd measure_temp', (error, stdout) => {
+                execFile('vcgencmd', ['measure_temp'], (error, stdout) => {
                     if (!error) {
                         info.temperature = stdout.trim();
                     }
@@ -53,8 +53,12 @@ class RaspberryPiController {
             throw new Error('GPIO control only available on Raspberry Pi');
         }
 
+        if (!/^\d+$/.test(String(pin))) {
+            throw new Error('Invalid GPIO pin');
+        }
+
         return new Promise((resolve, reject) => {
-            exec(`raspi-gpio set ${pin} ${state}`, (error, stdout, stderr) => {
+            execFile('raspi-gpio', ['set', String(pin), state], (error) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -69,8 +73,12 @@ class RaspberryPiController {
             throw new Error('GPIO control only available on Raspberry Pi');
         }
 
+        if (!/^\d+$/.test(String(pin))) {
+            throw new Error('Invalid GPIO pin');
+        }
+
         return new Promise((resolve, reject) => {
-            exec(`raspi-gpio get ${pin}`, (error, stdout, stderr) => {
+            execFile('raspi-gpio', ['get', String(pin)], (error, stdout) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -87,7 +95,7 @@ class RaspberryPiController {
         }
 
         return new Promise((resolve, reject) => {
-            exec('sudo reboot', (error, stdout, stderr) => {
+            execFile('sudo', ['reboot'], (error) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -103,7 +111,7 @@ class RaspberryPiController {
         }
 
         return new Promise((resolve, reject) => {
-            exec('sudo shutdown -h now', (error, stdout, stderr) => {
+            execFile('sudo', ['shutdown', '-h', 'now'], (error) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -116,7 +124,7 @@ class RaspberryPiController {
     // WiFi Management
     async getWiFiStatus() {
         return new Promise((resolve, reject) => {
-            exec('iwconfig wlan0', (error, stdout, stderr) => {
+            execFile('iwconfig', ['wlan0'], (error, stdout) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -128,7 +136,7 @@ class RaspberryPiController {
 
     async scanWiFi() {
         return new Promise((resolve, reject) => {
-            exec('sudo iwlist wlan0 scan | grep ESSID', (error, stdout, stderr) => {
+            execFile('sudo', ['iwlist', 'wlan0', 'scan'], (error, stdout) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -144,25 +152,34 @@ class RaspberryPiController {
 
     // Service Management
     async getServiceStatus(serviceName) {
+        if (!/^[a-zA-Z0-9._-]+$/.test(serviceName)) {
+            throw new Error('Invalid service name');
+        }
+
         return new Promise((resolve, reject) => {
-            exec(`systemctl is-active ${serviceName}`, (error, stdout, stderr) => {
-                resolve({
-                    service: serviceName,
-                    status: stdout.trim(),
-                    active: stdout.trim() === 'active'
-                });
+            execFile('systemctl', ['is-active', serviceName], (error, stdout) => {
+                if (error) {
+                    // systemctl returns non-zero for inactive services
+                    resolve({ service: serviceName, status: stdout.trim(), active: false });
+                } else {
+                    resolve({ service: serviceName, status: stdout.trim(), active: stdout.trim() === 'active' });
+                }
             });
         });
     }
 
     async controlService(serviceName, action) {
         const validActions = ['start', 'stop', 'restart', 'enable', 'disable'];
-        if (!validActions.includes(action)) {
+        if (!validActions.includes(action) || !/^[a-zA-Z]+$/.test(action)) {
             throw new Error(`Invalid action. Valid actions: ${validActions.join(', ')}`);
         }
 
+        if (!/^[a-zA-Z0-9._-]+$/.test(serviceName)) {
+            throw new Error('Invalid service name');
+        }
+
         return new Promise((resolve, reject) => {
-            exec(`sudo systemctl ${action} ${serviceName}`, (error, stdout, stderr) => {
+            execFile('sudo', ['systemctl', action, serviceName], (error) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -179,7 +196,7 @@ class RaspberryPiController {
         }
 
         return new Promise((resolve, reject) => {
-            exec('vcgencmd measure_temp', (error, stdout, stderr) => {
+            execFile('vcgencmd', ['measure_temp'], (error, stdout) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -192,7 +209,7 @@ class RaspberryPiController {
 
     async getMemoryInfo() {
         return new Promise((resolve, reject) => {
-            exec('free -h', (error, stdout, stderr) => {
+            execFile('free', ['-h'], (error, stdout) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -204,7 +221,7 @@ class RaspberryPiController {
 
     async getDiskUsage() {
         return new Promise((resolve, reject) => {
-            exec('df -h', (error, stdout, stderr) => {
+            execFile('df', ['-h'], (error, stdout) => {
                 if (error) {
                     reject(error);
                 } else {
