@@ -73,6 +73,12 @@ MASTERBOT is a comprehensive Raspberry Pi controller designed specifically for t
    - **Username**: admin
    - **Password**: changeMe123!
 
+   You can override these credentials using environment variables before starting the server:
+
+   ```bash
+   WEB_USER=myuser WEB_PASS=mypass npm start
+   ```
+
 ### Command Line Interface
 
 ```bash
@@ -120,7 +126,7 @@ Edit `config.json` to customize your setup:
   "web_interface": {
     "enabled": true,
     "port": 3000,
-    "auth": {
+  "auth": {
       "enabled": true,
       "username": "admin",
       "password": "changeMe123!"
@@ -128,6 +134,8 @@ Edit `config.json` to customize your setup:
   }
 }
 ```
+
+The `WEB_USER` and `WEB_PASS` environment variables can be set to override the `username` and `password` values when launching the server.
 
 ## 🏗️ Project Structure
 
