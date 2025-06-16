@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MASTERBOT - Raspberry Pi Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .system-info {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-size: 0.9em;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #51cf66, #40c057);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-active {
+            background: #51cf66;
+        }
+        
+        .status-inactive {
+            background: #ff6b6b;
+        }
+        
+        .gpio-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        
+        .gpio-pin {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            background: #fff5f5;
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 MASTERBOT</h1>
+            <p>Raspberry Pi 5 Controller Dashboard</p>
+        </div>
+        
+        <div class="dashboard">
+            <!-- System Information -->
+            <div class="card">
+                <h3>📊 System Information</h3>
+                <div id="system-info" class="system-info loading">Loading system information...</div>
+                <button class="btn" onclick="loadSystemInfo()">Refresh</button>
+            </div>
+            
+            <!-- Temperature Monitoring -->
+            <div class="card">
+                <h3>🌡️ Temperature Monitor</h3>
+                <div id="temperature-info" class="loading">Loading temperature...</div>
+                <button class="btn" onclick="loadTemperature()">Refresh</button>
+            </div>
+            
+            <!-- Memory & Disk Usage -->
+            <div class="card">
+                <h3>💾 Memory & Storage</h3>
+                <div id="memory-info" class="system-info loading">Loading memory info...</div>
+                <button class="btn" onclick="loadMemoryInfo()">Refresh Memory</button>
+                <button class="btn" onclick="loadDiskInfo()">Refresh Disk</button>
+            </div>
+            
+            <!-- WiFi Management -->
+            <div class="card">
+                <h3>📶 WiFi Management</h3>
+                <div id="wifi-info" class="loading">Loading WiFi status...</div>
+                <button class="btn" onclick="loadWiFiStatus()">Check Status</button>
+                <button class="btn" onclick="scanWiFi()">Scan Networks</button>
+            </div>
+            
+            <!-- GPIO Control -->
+            <div class="card">
+                <h3>⚡ GPIO Control</h3>
+                <div class="input-group">
+                    <label for="gpio-pin">GPIO Pin:</label>
+                    <input type="number" id="gpio-pin" placeholder="Enter pin number (e.g., 18)">
+                </div>
+                <div class="input-group">
+                    <label for="gpio-state">State:</label>
+                    <select id="gpio-state">
+                        <option value="op">Output</option>
+                        <option value="ip">Input</option>
+                        <option value="dh">Drive High</option>
+                        <option value="dl">Drive Low</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="setGPIO()">Set GPIO</button>
+                <button class="btn" onclick="getGPIO()">Get GPIO</button>
+                <div id="gpio-result"></div>
+            </div>
+            
+            <!-- Service Management -->
+            <div class="card">
+                <h3>🔧 Service Management</h3>
+                <div class="input-group">
+                    <label for="service-name">Service Name:</label>
+                    <input type="text" id="service-name" placeholder="Enter service name (e.g., ssh)">
+                </div>
+                <div class="input-group">
+                    <label for="service-action">Action:</label>
+                    <select id="service-action">
+                        <option value="status">Check Status</option>
+                        <option value="start">Start</option>
+                        <option value="stop">Stop</option>
+                        <option value="restart">Restart</option>
+                        <option value="enable">Enable</option>
+                        <option value="disable">Disable</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="controlService()">Execute</button>
+                <div id="service-result"></div>
+            </div>
+            
+            <!-- System Control -->
+            <div class="card">
+                <h3>🔄 System Control</h3>
+                <p style="margin-bottom: 15px; color: #666;">⚠️ These actions will affect the entire system</p>
+                <button class="btn btn-danger" onclick="rebootSystem()" style="margin-right: 10px;">🔄 Reboot</button>
+                <button class="btn btn-danger" onclick="shutdownSystem()">⏻ Shutdown</button>
+                <div id="system-control-result"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Authentication setup
+        const auth = btoa('admin:changeMe123!'); // Change this in production
+        
+        // Helper function for API calls
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            try {
+                const response = await fetch(`/api${endpoint}`, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Basic ${auth}`
+                    },
+                    body: body ? JSON.stringify(body) : null
+                });
+                
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
+                return data.data;
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        
+        // System Information
+        async function loadSystemInfo() {
+            const element = document.getElementById('system-info');
+            element.className = 'system-info loading';
+            element.textContent = 'Loading...';
+            
+            try {
+                const data = await apiCall('/system/info');
+                element.className = 'system-info';
+                element.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                element.className = 'system-info error';
+                element.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Temperature
+        async function loadTemperature() {
+            const element = document.getElementById('temperature-info');
+            element.className = 'loading';
+            element.textContent = 'Loading...';
+            
+            try {
+                const data = await apiCall('/system/temperature');
+                element.className = '';
+                element.innerHTML = `<strong>CPU Temperature: ${data.temperature}</strong>`;
+            } catch (error) {
+                element.className = 'error';
+                element.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Memory Information
+        async function loadMemoryInfo() {
+            const element = document.getElementById('memory-info');
+            element.className = 'system-info loading';
+            element.textContent = 'Loading...';
+            
+            try {
+                const data = await apiCall('/system/memory');
+                element.className = 'system-info';
+                element.textContent = data.memory;
+            } catch (error) {
+                element.className = 'system-info error';
+                element.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Disk Information
+        async function loadDiskInfo() {
+            const element = document.getElementById('memory-info');
+            element.className = 'system-info loading';
+            element.textContent = 'Loading...';
+            
+            try {
+                const data = await apiCall('/system/disk');
+                element.className = 'system-info';
+                element.textContent = data.disk;
+            } catch (error) {
+                element.className = 'system-info error';
+                element.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // WiFi Status
+        async function loadWiFiStatus() {
+            const element = document.getElementById('wifi-info');
+            element.className = 'loading';
+            element.textContent = 'Loading...';
+            
+            try {
+                const data = await apiCall('/wifi/status');
+                element.className = 'system-info';
+                element.textContent = data.status;
+            } catch (error) {
+                element.className = 'error';
+                element.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // WiFi Scan
+        async function scanWiFi() {
+            const element = document.getElementById('wifi-info');
+            element.className = 'loading';
+            element.textContent = 'Scanning...';
+            
+            try {
+                const data = await apiCall('/wifi/scan');
+                element.className = '';
+                element.innerHTML = '<strong>Available Networks:</strong><br>' + 
+                    data.networks.map(network => `• ${network}`).join('<br>');
+            } catch (error) {
+                element.className = 'error';
+                element.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // GPIO Control
+        async function setGPIO() {
+            const pin = document.getElementById('gpio-pin').value;
+            const state = document.getElementById('gpio-state').value;
+            const result = document.getElementById('gpio-result');
+            
+            if (!pin) {
+                result.className = 'error';
+                result.textContent = 'Please enter a pin number';
+                return;
+            }
+            
+            try {
+                const data = await apiCall(`/gpio/${pin}`, 'POST', { state });
+                result.className = '';
+                result.innerHTML = `<strong>${data.message}</strong>`;
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function getGPIO() {
+            const pin = document.getElementById('gpio-pin').value;
+            const result = document.getElementById('gpio-result');
+            
+            if (!pin) {
+                result.className = 'error';
+                result.textContent = 'Please enter a pin number';
+                return;
+            }
+            
+            try {
+                const data = await apiCall(`/gpio/${pin}`);
+                result.className = '';
+                result.innerHTML = `<strong>GPIO ${data.pin}: ${data.state}</strong>`;
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Service Control
+        async function controlService() {
+            const serviceName = document.getElementById('service-name').value;
+            const action = document.getElementById('service-action').value;
+            const result = document.getElementById('service-result');
+            
+            if (!serviceName) {
+                result.className = 'error';
+                result.textContent = 'Please enter a service name';
+                return;
+            }
+            
+            try {
+                if (action === 'status') {
+                    const data = await apiCall(`/service/${serviceName}/status`);
+                    result.className = '';
+                    const statusColor = data.active ? 'status-active' : 'status-inactive';
+                    result.innerHTML = `<span class="status-indicator ${statusColor}"></span><strong>${data.service}: ${data.status}</strong>`;
+                } else {
+                    const data = await apiCall(`/service/${serviceName}/${action}`, 'POST');
+                    result.className = '';
+                    result.innerHTML = `<strong>${data.message}</strong>`;
+                }
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // System Control
+        async function rebootSystem() {
+            if (!confirm('Are you sure you want to reboot the system?')) {
+                return;
+            }
+            
+            const result = document.getElementById('system-control-result');
+            
+            try {
+                const data = await apiCall('/system/reboot', 'POST');
+                result.className = '';
+                result.innerHTML = `<strong>${data.message}</strong>`;
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        async function shutdownSystem() {
+            if (!confirm('Are you sure you want to shutdown the system?')) {
+                return;
+            }
+            
+            const result = document.getElementById('system-control-result');
+            
+            try {
+                const data = await apiCall('/system/shutdown', 'POST');
+                result.className = '';
+                result.innerHTML = `<strong>${data.message}</strong>`;
+            } catch (error) {
+                result.className = 'error';
+                result.textContent = `Error: ${error.message}`;
+            }
+        }
+        
+        // Load initial data
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSystemInfo();
+            loadTemperature();
+            loadWiFiStatus();
+        });
+        
+        // Auto-refresh temperature every 30 seconds
+        setInterval(loadTemperature, 30000);
+    </script>
+</body>
+</html>
+

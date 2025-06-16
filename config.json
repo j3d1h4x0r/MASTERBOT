@@ -1,0 +1,61 @@
+{
+  "raspberry_pi": {
+    "model": "Raspberry Pi 5",
+    "gpio_pins": {
+      "led_status": 18,
+      "relay_1": 23,
+      "relay_2": 24,
+      "button_1": 25,
+      "sensor_1": 4
+    },
+    "services": {
+      "monitored": [
+        "ssh",
+        "nginx",
+        "postgresql",
+        "docker",
+        "bluetooth"
+      ]
+    },
+    "system": {
+      "temperature_warning": 70,
+      "temperature_critical": 80,
+      "memory_warning_percent": 85,
+      "disk_warning_percent": 90
+    },
+    "wifi": {
+      "interface": "wlan0",
+      "auto_reconnect": true,
+      "scan_interval": 300
+    },
+    "monitoring": {
+      "enabled": true,
+      "interval": 60,
+      "log_file": "/var/log/masterbot.log",
+      "alerts": {
+        "email": false,
+        "console": true
+      }
+    }
+  },
+  "web_interface": {
+    "enabled": true,
+    "port": 3000,
+    "host": "0.0.0.0",
+    "auth": {
+      "enabled": true,
+      "username": "admin",
+      "password": "changeMe123!"
+    }
+  },
+  "api": {
+    "enabled": true,
+    "port": 3001,
+    "cors": true,
+    "rate_limit": {
+      "enabled": true,
+      "requests_per_minute": 60
+    }
+  }
+}
+

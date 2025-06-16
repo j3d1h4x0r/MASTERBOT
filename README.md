@@ -1,26 +1,31 @@
 # MASTERBOT
 
-A powerful automation and assistant bot designed to streamline workflows and enhance productivity.
+A Node.js application for controlling Raspberry Pi 5 settings and hardware through both CLI and web interface.
 
 ## 🤖 About
 
-MASTERBOT is an intelligent automation tool that helps users manage tasks, automate repetitive processes, and provide intelligent assistance across various domains.
+MASTERBOT is a comprehensive Raspberry Pi controller designed specifically for the Raspberry Pi 5. It provides full system control including GPIO management, service monitoring, WiFi configuration, system monitoring, and hardware control through both command-line interface and a beautiful web dashboard.
 
 ## ✨ Features
 
-- **Task Automation**: Automate repetitive tasks and workflows
-- **Intelligent Assistance**: Provide smart responses and suggestions
-- **Multi-Platform Support**: Works across different platforms and environments
-- **Customizable**: Easily configurable to meet specific needs
-- **Extensible**: Plugin architecture for additional functionality
+- **🌐 Web Dashboard**: Beautiful, responsive web interface for easy control
+- **⚡ GPIO Control**: Complete GPIO pin management and control
+- **🔧 Service Management**: Start, stop, restart, and monitor system services
+- **📊 System Monitoring**: Real-time CPU temperature, memory, and disk usage
+- **📶 WiFi Management**: Check status and scan for available networks
+- **🔄 System Control**: Remote reboot and shutdown capabilities
+- **🔐 Authentication**: Secure access with configurable authentication
+- **📱 Mobile Friendly**: Responsive design works on all devices
+- **🔌 REST API**: Full REST API for integration with other systems
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- Git
-- Required dependencies (see requirements.txt)
+- **Raspberry Pi 5** (or compatible Raspberry Pi)
+- **Node.js 16+** installed
+- **Git** for cloning the repository
+- **sudo privileges** for system operations
 
 ### Installation
 
@@ -32,48 +37,94 @@ MASTERBOT is an intelligent automation tool that helps users manage tasks, autom
 
 2. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   npm install
    ```
 
-3. Configure the bot:
+3. Configure the application:
    ```bash
-   cp config.example.json config.json
-   # Edit config.json with your settings
+   # Edit config.json with your preferred settings
+   nano config.json
    ```
 
-4. Run the bot:
+4. Start the application:
    ```bash
-   python main.py
+   # Start web server
+   npm start
+   
+   # Or use CLI mode
+   npm run cli
    ```
 
 ## 📖 Usage
 
-### Basic Commands
+### Web Interface
+
+1. Start the web server:
+   ```bash
+   npm start
+   ```
+
+2. Open your browser and navigate to:
+   ```
+   http://your-pi-ip:3000
+   ```
+
+3. Login with default credentials:
+   - **Username**: admin
+   - **Password**: changeMe123!
+
+### Command Line Interface
 
 ```bash
-# Start the bot
-python main.py
+# Get system information
+node index.js info
 
-# Run with specific configuration
-python main.py --config custom_config.json
+# Check CPU temperature
+node index.js temp
 
-# Enable verbose logging
-python main.py --verbose
+# Control GPIO pin 18
+node index.js gpio-set 18 dh
+node index.js gpio-get 18
+
+# Manage services
+node index.js service-status ssh
+node index.js service-control nginx restart
+
+# WiFi operations
+node index.js wifi-status
+node index.js wifi-scan
+
+# System control (use with caution!)
+node index.js reboot
+node index.js shutdown
 ```
 
 ### Configuration
 
-The bot can be configured through the `config.json` file:
+Edit `config.json` to customize your setup:
 
 ```json
 {
-  "bot_name": "MASTERBOT",
-  "api_keys": {
-    "service1": "your_api_key_here"
+  "raspberry_pi": {
+    "model": "Raspberry Pi 5",
+    "gpio_pins": {
+      "led_status": 18,
+      "relay_1": 23,
+      "relay_2": 24
+    },
+    "system": {
+      "temperature_warning": 70,
+      "temperature_critical": 80
+    }
   },
-  "settings": {
-    "auto_start": true,
-    "log_level": "INFO"
+  "web_interface": {
+    "enabled": true,
+    "port": 3000,
+    "auth": {
+      "enabled": true,
+      "username": "admin",
+      "password": "changeMe123!"
+    }
   }
 }
 ```
@@ -82,31 +133,54 @@ The bot can be configured through the `config.json` file:
 
 ```
 MASTERBOT/
-├── main.py              # Main application entry point
+├── index.js             # CLI application & core controller
+├── server.js            # Web server & REST API
 ├── config.json          # Configuration file
-├── requirements.txt     # Python dependencies
-├── src/                 # Source code
-│   ├── bot/            # Bot core functionality
-│   ├── plugins/        # Plugin modules
-│   └── utils/          # Utility functions
-├── tests/              # Test files
+├── package.json         # Node.js dependencies
+├── public/              # Web interface files
+│   └── index.html      # Dashboard HTML
 ├── docs/               # Documentation
 └── README.md           # This file
 ```
 
+## 🔌 API Endpoints
+
+### System Information
+- `GET /api/system/info` - Get system information
+- `GET /api/system/temperature` - Get CPU temperature
+- `GET /api/system/memory` - Get memory usage
+- `GET /api/system/disk` - Get disk usage
+
+### GPIO Control
+- `GET /api/gpio/:pin` - Get GPIO pin state
+- `POST /api/gpio/:pin` - Set GPIO pin state
+
+### Service Management
+- `GET /api/service/:name/status` - Get service status
+- `POST /api/service/:name/:action` - Control service
+
+### WiFi Management
+- `GET /api/wifi/status` - Get WiFi status
+- `GET /api/wifi/scan` - Scan for networks
+
+### System Control
+- `POST /api/system/reboot` - Reboot system
+- `POST /api/system/shutdown` - Shutdown system
+
 ## 🧪 Testing
 
-Run the test suite:
+Test the application:
 
 ```bash
-# Run all tests
-python -m pytest
+# Test CLI commands
+node index.js info
 
-# Run with coverage
-python -m pytest --cov=src
+# Test web server
+npm start
+# Visit http://localhost:3000
 
-# Run specific test file
-python -m pytest tests/test_bot.py
+# Test API endpoints
+curl -u admin:changeMe123! http://localhost:3000/api/system/info
 ```
 
 ## 🤝 Contributing
