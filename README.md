@@ -103,6 +103,9 @@ node index.js shutdown
 
 Edit `config.json` to customize your setup:
 
+WiFi commands use the interface defined at `raspberry_pi.wifi.interface`.
+Change this value if your wireless adapter is not `wlan0`.
+
 ```json
 {
   "raspberry_pi": {
@@ -115,6 +118,11 @@ Edit `config.json` to customize your setup:
     "system": {
       "temperature_warning": 70,
       "temperature_critical": 80
+    },
+    "wifi": {
+      "interface": "wlan0",
+      "auto_reconnect": true,
+      "scan_interval": 300
     }
   },
   "web_interface": {

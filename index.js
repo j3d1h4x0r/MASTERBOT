@@ -4,11 +4,19 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const config = require('./config.json');
 
 class RaspberryPiController {
     constructor() {
         this.isRaspberryPi = this.detectRaspberryPi();
-        console.log(`🤖 MASTERBOT initialized on ${this.isRaspberryPi ? 'Raspberry Pi' : 'other system'}`);
+        this.wifiInterface =
+            (config.raspberry_pi &&
+                config.raspberry_pi.wifi &&
+                config.raspberry_pi.wifi.interface) ||
+            'wlan0';
+        console.log(
+            `🤖 MASTERBOT initialized on ${this.isRaspberryPi ? 'Raspberry Pi' : 'other system'}`
+        );
     }
 
     detectRaspberryPi() {
@@ -116,7 +124,7 @@ class RaspberryPiController {
     // WiFi Management
     async getWiFiStatus() {
         return new Promise((resolve, reject) => {
-            exec('iwconfig wlan0', (error, stdout, stderr) => {
+            exec(`iwconfig ${this.wifiInterface}`, (error, stdout, stderr) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -128,7 +136,9 @@ class RaspberryPiController {
 
     async scanWiFi() {
         return new Promise((resolve, reject) => {
-            exec('sudo iwlist wlan0 scan | grep ESSID', (error, stdout, stderr) => {
+            exec(
+                `sudo iwlist ${this.wifiInterface} scan | grep ESSID`,
+                (error, stdout, stderr) => {
                 if (error) {
                     reject(error);
                 } else {
